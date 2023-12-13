@@ -1,0 +1,76 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: AWS CloudFormation Template for Django Application with RDS
+
+Parameters:
+  InstanceType:
+    Description: EC2 instance type
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+      - t2.small
+      - t2.medium
+
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access
+    Type: 'AWS::EC2::KeyPair::KeyName'
+
+  DBInstanceClass:
+    Description: The database instance type
+    Type: String
+    Default: db.t2.micro
+
+  DBName:
+    Description: The database name
+    Type: String
+
+  DBUser:
+    Description: The database admin account username
+    Type: String
+
+  DBPassword:
+    Description: The database admin account password
+    Type: String
+    NoEcho: true
+
+Resources:
+  EC2Instance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: !Ref InstanceType
+      SecurityGroups: [!Ref InstanceSecurityGroup]
+      KeyName: !Ref KeyName
+      ImageId: ami-0abcdef1234567890 # Update this to the latest AMI in your region
+
+  InstanceSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Enable SSH and HTTP access
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: 0.0.0.0/0
+
+  DBInstance:
+    Type: 'AWS::RDS::DBInstance'
+    Properties:
+      DBInstanceClass: !Ref DBInstanceClass
+      AllocatedStorage: '20'
+      Engine: mysql
+      MasterUsername: !Ref DBUser
+      MasterUserPassword: !Ref DBPassword
+      DBName: !Ref DBName
+      BackupRetentionPeriod: 3
+
+Outputs:
+  WebsiteURL:
+    Description: URL of the website
+    Value: !GetAtt [EC2Instance, PublicDnsName]
+  DBEndpoint:
+    Description: Database endpoint address
+    Value: !GetAtt [DBInstance, Endpoint.Address]
